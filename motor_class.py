@@ -19,12 +19,6 @@ class Motor:
         # delay 7 seconds   
 
 
-    
-    def _del(self): 
-
-        GPIO.cleanup()
-    
-    #cleans up open pin output using destructor 
 
     def _clockwise(self): 
         # clockwise rotation
@@ -42,8 +36,13 @@ class Motor:
         GPIO.output(self.pin1,GPIO.LOW)
         GPIO.output(self.pin2,GPIO.LOW)
 
-        
+    def __del__(self): 
+
+        GPIO.cleanup()
     
+    #cleans up open pin output using destructor 
+    # edit i made sequenced destructor at the end and used the correct name 
+
 
     
 
