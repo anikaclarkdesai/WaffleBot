@@ -2,7 +2,7 @@ from motor_class import Motor
 import time 
 
 
-motor1 = Motor(1,2) 
+motor1 = Motor(23,24) 
 # insert the pin numbers as connected 
 # change this based on the pins we use 
 
@@ -14,7 +14,7 @@ motor1._clockwise()
 time.sleep(7) 
 # 7 second delay
 
-motor1._anticlockwise()
+motor1._counterclockwise()
 # turns other way
 
 time.sleep(5) 
