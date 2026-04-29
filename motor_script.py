@@ -2,9 +2,9 @@ from motor_class import Motor
 import time 
 
 
-motor1 = Motor(23,24) 
-# insert the pin numbers as connected 
-# change this based on the pins we use 
+motor1 = Motor(16, 18)
+# Use BCM pin numbers (not board numbers)
+# Change these based on your physical wiring 
 
 motor1._clockwise() 
 # turns motor clockwise 
