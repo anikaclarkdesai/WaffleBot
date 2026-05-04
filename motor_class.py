@@ -1,43 +1,67 @@
-from gpiozero import OutputDevice
+from gpiozero import Device, OutputDevice
+from gpiozero.pins.lgpio import LGPIOFactory
+import time
+
+# Required for Raspberry Pi 5
+Device.pin_factory = LGPIOFactory()
 
 
 class Motor:
-    # init method setting up pins as forward backward etc 
     def __init__(self, pin1, pin2):
-        # init method sets forward and backward values for the pin and its rotation 
-        # Use BCM pin numbering (pin numbers like 24, 23 instead of board numbers)
+        self._pin1 = pin1
+        self._pin2 = pin2
+        self._running = False
+        self.pin1 = OutputDevice(pin1, active_high=True, initial_value=False)
+        self.pin2 = OutputDevice(pin2, active_high=True, initial_value=False)
+"""
+    def clockwise(self):
+        self.pin1.on()
+        self.pin2.off()
+        self._running = True
+
+    def counterclockwise(self):
+        self.pin1.off()
+        self.pin2.on()
+        self._running = True
+
+    def stop(self):
+        self.pin1.off()
+        self.pin2.off()
+        self._running = False   
+        """
+
+
+class Motor:
+    def __init__(self, pin1, pin2):
+        self._running = False
+
+        # Initialize pins explicitly OFF
         self.pin1 = OutputDevice(pin1, active_high=True, initial_value=False)
         self.pin2 = OutputDevice(pin2, active_high=True, initial_value=False)
 
-        # time 7 seconds 
-        # stop delay 2 seconds 
-        # delay 7 seconds   
+        # Safety: ensure motor is stopped on startup
+        self.stop()
 
-    def _clockwise(self):
-        # clockwise rotation
+    def clockwise(self):
+        print(f"[DEBUG] CW → pin1 HIGH, pin2 LOW")
         self.pin1.on()
+        time.sleep(0.05)  # small delay helps some drivers register change
         self.pin2.off()
-    
-    def _counterclockwise(self):
-        # counterclockwise rotation
+        self._running = True
+
+    def counterclockwise(self):
+        print(f"[DEBUG] CCW → pin1 LOW, pin2 HIGH")
         self.pin1.off()
+        time.sleep(0.05)
         self.pin2.on()
+        self._running = True
 
-    def _stop(self):
-        # stopping the motor from spinning
+    def stop(self):
+        print(f"[DEBUG] STOP → both LOW")
         self.pin1.off()
         self.pin2.off()
+        self._running = False
 
-    def __del__(self):
-        self._stop()
-    
-    # cleans up open pin output using destructor 
-
-
-    
-
-
-
-
-
-    
+    def cleanup(self):
+        self.stop()
+        self.pin1.close()
