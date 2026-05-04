@@ -125,6 +125,15 @@ def checkForCMDInput():
 
 # Modify the checkMail function as needed for Gmail, but keep the IMAP connection logic.
 
+#Google Voice emails include the sender's phone number, so you can reply to them ??
+def get_phone_from_gvoice(msg_from):
+    # Google Voice puts the number in the From field
+    # Format: "1234567890@messaging.googlevpids.com"
+    match = re.search(r'(\d{10,11})@', msg_from)
+    if match:
+        return "+1" + match.group(1)[-10:]  # normalize to +1XXXXXXXXXX
+    return None
+
 #Main loop
 def checkMail():
     imap_server = "imap.gmail.com"
@@ -136,8 +145,6 @@ def checkMail():
     rem = messages
 
     while True:
-        #imap = imaplib.IMAP4_SSL(imap_server)
-        #imap.login(username, password)
         status, messages = imap.select("INBOX")
         messages = int(messages[0])
 
@@ -146,8 +153,17 @@ def checkMail():
             for response in msg:
                 if isinstance(response, tuple):
                     msg = email.message_from_bytes(response[1])
-                    print(msg['From'])
-                    return get_contents(msg), msg['From']
+                    sender = msg['From']  # ← define sender FIRST
+                    print(f"Email from: {sender}")
+
+                    if "voice-noreply@google.com" in sender:
+                        print(f"Text received from: {sender}")
+                        phone = get_phone_from_gvoice(sender)
+                        print(f"Sender's phone number: {phone}")
+                        return get_contents(msg), phone  # ← return phone number, not raw sender
+                    else:
+                        print("Ignored non-Google Voice email")
+
             rem = messages
 
         print("Looped")
