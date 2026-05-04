@@ -1,4 +1,13 @@
-from gpiozero import OutputDevice
+try:
+    from gpiozero import OutputDevice
+except ImportError:
+    class OutputDevice:
+        def __init__(self, pin, **kwargs):
+            self.pin = pin
+        def on(self):
+            print(f"Pin {self.pin} ON")
+        def off(self):
+            print(f"Pin {self.pin} OFF")
 
 
 class Motor:

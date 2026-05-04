@@ -14,7 +14,7 @@ import os
 import time
 import select
 import sys
-from exchangelib import DELEGATE, Account, Credentials, Message, Mailbox, HTMLBody
+#from exchangelib import DELEGATE, Account, Credentials, Message, Mailbox, HTMLBody
 import re
 
 #twilio set up as backup
@@ -127,48 +127,64 @@ def checkForCMDInput():
 
 #Google Voice emails include the sender's phone number, so you can reply to them ??
 def get_phone_from_gvoice(msg_from):
-    # Google Voice puts the number in the From field
-    # Format: "1234567890@messaging.googlevpids.com"
-    match = re.search(r'(\d{10,11})@', msg_from)
+    # From field format: "(908) 361-2517" <15402517822.19083612517...@txt.voice.google.com>
+    # Extract the 10-digit number from the display name
+    match = re.search(r'\((\d{3})\)\s*(\d{3})-(\d{4})', msg_from)
     if match:
-        return "+1" + match.group(1)[-10:]  # normalize to +1XXXXXXXXXX
+        return "+1" + match.group(1) + match.group(2) + match.group(3)
     return None
 
+
+def process_order(content, phone):
+    reply_to = f"{phone}@txt.voice.google.com"
+    
 #Main loop
 def checkMail():
     imap_server = "imap.gmail.com"
-
     imap = imaplib.IMAP4_SSL(imap_server)
     imap.login(username, password)
     status, messages = imap.select("INBOX")
-    messages = int(messages[0])
-    rem = messages
+    rem = int(messages[0])
+ 
+    try:
+        while True:
+            status, messages = imap.select("INBOX")
+            total = int(messages[0])
+ 
+            if total != rem:
+                # Fetch ALL new messages since last check
+                for i in range(rem + 1, total + 1):
+                    res, msg = imap.fetch(str(i), "(RFC822)")
+                    for response in msg:
+                        if isinstance(response, tuple):
+                            parsed = email.message_from_bytes(response[1])
+                            sender = parsed['From']
+                            subject = parsed.get('Subject', '')
+                            print(f"Email from: {sender}")
+                            print(f"Subject: {subject}")
+ 
+                            if "txt.voice.google.com" in sender:
+                                phone = get_phone_from_gvoice(sender)
+                                content = get_contents(parsed)
+                                print(f"Text received from: {phone}")
+                                print(f"Content: {content}")
+                                process_order(content, phone)
+                            else:
+                                print("Ignored non-Google Voice email")
+                rem = total
+ 
+            print("Looped")
+            time.sleep(5)
+ 
+    except KeyboardInterrupt:
+        print("Shutting down...")
+    finally:
+        imap.close()
+        imap.logout()
+ 
 
-    while True:
-        status, messages = imap.select("INBOX")
-        messages = int(messages[0])
-
-        if messages != rem:
-            res, msg = imap.fetch(str(messages), "(RFC822)") 
-            for response in msg:
-                if isinstance(response, tuple):
-                    msg = email.message_from_bytes(response[1])
-                    sender = msg['From']  # ← define sender FIRST
-                    print(f"Email from: {sender}")
-
-                    if "voice-noreply@google.com" in sender:
-                        print(f"Text received from: {sender}")
-                        phone = get_phone_from_gvoice(sender)
-                        print(f"Sender's phone number: {phone}")
-                        return get_contents(msg), phone  # ← return phone number, not raw sender
-                    else:
-                        print("Ignored non-Google Voice email")
-
-            rem = messages
-
-        print("Looped")
-        time.sleep(5)
-
-    # Close the connection and logout (you can move this to outside the loop)
-    imap.close()
-    imap.logout()
+if __name__ == "__main__":
+    print("Waiting for texts...")
+    content, phone = checkMail()
+    print(f"Order received: {content}")
+    print(f"From: {phone}")
