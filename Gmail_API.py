@@ -136,7 +136,17 @@ def get_phone_from_gvoice(msg_from):
 
 
 def process_order(content, phone):
-    reply_to = f"{phone}@txt.voice.google.com"
+    lines = content.splitlines()
+    if len(lines) >= 3:
+        print(f"{lines[2].strip()}")
+    else:
+        print(f"Email only has {len(lines)} lines")
+
+def get_seventh_line(content):
+    lines = content.splitlines()
+    if len(lines) >= 3:
+        return lines[2].strip()
+    return None
     
 #Main loop
 def checkMail():
@@ -166,8 +176,6 @@ def checkMail():
                             if "txt.voice.google.com" in sender:
                                 phone = get_phone_from_gvoice(sender)
                                 content = get_contents(parsed)
-                                print(f"Text received from: {phone}")
-                                print(f"Content: {content}")
                                 process_order(content, phone)
                             else:
                                 print("Ignored non-Google Voice email")
